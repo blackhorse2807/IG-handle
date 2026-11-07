@@ -69,4 +69,4 @@ Known weaknesses: 3 taps across two apps; Step 1 can't be attributed to a phone;
 
 Parked by the user: hosting and database upgrades (Vercel Hobby is non-commercial; Atlas M0 limits; no indexes; events collection grows; dashboard polls everything every 4 s).
 
-Deliverables: `Instagram-Handle-Capture-Update.pptx` (10-slide manager deck), `DELIVERABLES.md` (older design doc; still describes the earlier one-link Twilio flow and needs a refresh).
+Deliverables: `Instagram-Handle-Capture-Update.pptx` (10-slide manager deck), `Instagram-Handle-Capture-Addon-Import.pptx` (8-slide add-on deck: contact list import), `DELIVERABLES.md` (older design doc; still describes the earlier one-link Twilio flow and needs a refresh).
