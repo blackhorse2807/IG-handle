@@ -65,7 +65,9 @@ Blockers before real users:
 3. **App Review** for messaging permissions, then switch the app to **Live** (today only role accounts are guaranteed delivery).
 4. WhatsApp at scale: manual today; bulk from a normal number risks a ban; the Business Platform needs templates, opt-in, per-message cost, daily caps.
 
-Known weaknesses: 3 taps across two apps; Step 1 can't be attributed to a phone; phone-only (ig.me fails on desktop); wrong account if several are logged in; built around Meta's first-contact bug; business inbox clutter; one shared admin password; no login rate limit; no alerts (token expiry fails silently).
+Known weaknesses: 3 taps across two apps; Step 1 can't be attributed to a phone; phone-only (ig.me fails on desktop); wrong account if several are logged in; built around Meta's first-contact bug; business inbox clutter; one shared admin password; no login rate limit; no alerts (Instagram API errors only show in Vercel logs).
+
+Access token: `IG_TOKEN` is a **System User** token for innoviti-assgn (checked 7 Nov 2026 in the access token debugger): Expires Never, Data Access Expires Never. It breaks only if the system user or its asset access is removed in Business Settings. Its scopes include two the app doesn't use (`instagram_manage_comments`, `instagram_content_publish`); request only `instagram_basic` + `instagram_manage_messages` in App Review and regenerate the token with just those.
 
 Parked by the user: hosting and database upgrades (Vercel Hobby is non-commercial; Atlas M0 limits; no indexes; events collection grows; dashboard polls everything every 4 s).
 
