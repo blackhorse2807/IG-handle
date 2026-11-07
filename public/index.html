@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handle Capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f6f2; --panel: #ffffff; --ink: #1c1c19; --soft: #45443f; --muted: #7a786f;
+    --line: #e6e3db; --line-strong: #d0ccc1; --field: #fbfaf7; --hover: #f3f1ea;
+    --accent: #1d5c48; --accent-ink: #ffffff; --accent-soft: #e6efe9;
+    --wait: #94620a; --bad: #a3392d; --none: #9a978d;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151513; --panel: #1c1c1a; --ink: #ecebe5; --soft: #c9c7bf; --muted: #95938a;
+      --line: #2c2b27; --line-strong: #44423c; --field: #181816; --hover: #232320;
+      --accent: #7cc4a6; --accent-ink: #10221b; --accent-soft: #1f2e28;
+      --wait: #dcaa4e; --bad: #e8857a; --none: #75736b;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 "IBM Plex Sans", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Controls */
+  input[type=tel], input[type=password] { padding: 9px 12px; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; min-width: 0; }
+  input::placeholder { color: var(--none); }
+  .btn { font: inherit; font-size: 14px; font-weight: 500; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+  .btn.ghost:hover { background: var(--hover); }
+  .btn.sm { padding: 5px 10px; font-size: 13px; }
+  .link { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; color: var(--muted); cursor: pointer; }
+  .link:hover { color: var(--ink); }
+  .err { color: var(--bad); font-size: 13px; margin: 8px 0 0; }
+
+  /* Header */
+  header { padding: 28px 0 0; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .brand { font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+  .top nav { display: flex; gap: 20px; }
+
+  /* Create bar */
+  .create { margin: 28px 0 0; display: flex; gap: 8px; }
+  .create input { flex: 1; }
+
+  /* Summary + tabs */
+  .bar { margin: 36px 0 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .tabs { display: flex; gap: 22px; }
+  .tab { background: none; border: 0; padding: 0 0 10px; font: inherit; font-size: 14px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab[aria-selected=true] { color: var(--ink); font-weight: 500; border-bottom-color: var(--ink); }
+  .tab .count { color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .summary { font-size: 13.5px; color: var(--muted); padding-bottom: 10px; }
+  .summary b { color: var(--ink); font-weight: 500; }
+
+  /* Table */
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-weight: 400; font-size: 12.5px; color: var(--muted); padding: 14px 12px 8px; white-space: nowrap; }
+  th:first-child, td:first-child { padding-left: 0; }
+  th:last-child, td:last-child { padding-right: 0; text-align: right; }
+  td { padding: 12px; border-top: 1px solid var(--line); white-space: nowrap; height: 49px; }
+  td:last-child { width: 1%; }
+  .handle { font-weight: 500; color: var(--ink); text-decoration: none; }
+  .handle:hover { text-decoration: underline; }
+  .dash { color: var(--none); }
+  .st { font-size: 13.5px; }
+  .st::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; background: currentColor; }
+  .st.connected { color: var(--accent); }
+  .st.waiting { color: var(--wait); }
+  .st.unused { color: var(--none); }
+  .st.expired { color: var(--bad); }
+  .left { color: var(--muted); font-size: 12.5px; margin-left: 6px; }
+  .when { color: var(--muted); font-size: 13px; }
+  .empty { color: var(--muted); padding: 40px 0; text-align: center; border-top: 1px solid var(--line); }
+  tr.fresh td { animation: flash 2s ease-out; }
+  @keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
+
+  /* Activity */
+  ul.feed { list-style: none; margin: 0; padding: 0; }
+  ul.feed li { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  ul.feed li:first-child { border-top: 0; }
+  ul.feed time { color: var(--muted); font-size: 13px; }
+  ul.feed .what b { font-weight: 500; }
+  ul.feed li.good .what { color: var(--accent); }
+  ul.feed .why { display: block; color: var(--muted); font-size: 13px; }
+
+  footer { color: var(--muted); font-size: 12.5px; padding: 32px 0 40px; }
+
+  /* Dialogs */
+  dialog { border: 1px solid var(--line); border-radius: 12px; padding: 0; width: min(520px, calc(100vw - 32px)); background: var(--panel); color: var(--ink); }
+  dialog::backdrop { background: rgb(0 0 0 / 0.35); }
+  .dlg { padding: 22px; }
+  .dlg h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+  .dlg .sub { margin: 0 0 16px; color: var(--muted); font-size: 13.5px; }
+  .msg { white-space: pre-wrap; word-break: break-word; background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-size: 13.5px; color: var(--soft); max-height: 260px; overflow: auto; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .actions > .btn { flex: 1; }
+  .close { float: right; margin: -4px -4px 0 0; }
+  ol.steps { margin: 0; padding-left: 20px; }
+  ol.steps li { margin-bottom: 12px; color: var(--soft); font-size: 14px; }
+  ol.steps b { color: var(--ink); font-weight: 600; display: block; }
+  .aside { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--soft); font-size: 13.5px; }
+
+  /* Login */
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  .login form { width: 100%; max-width: 320px; display: grid; gap: 12px; }
+  .login .brand { font-size: 20px; margin-bottom: 4px; }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 0 16px; }
+    .create { flex-wrap: wrap; }
+    .create input { flex-basis: 100%; }
+    .create .btn { flex: 1; }
+    .summary { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { tr.fresh td { animation: none; } }
+</style>
+</head>
+<body>
+<div id="login" class="login" hidden>
+  <form id="loginForm">
+    <div class="brand">Handle Capture</div>
+    <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password" aria-label="Admin password" required>
+    <button class="btn" type="submit">Log in</button>
+    <p class="err" id="loginErr" hidden></p>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <div class="wrap">
+    <header>
+      <div class="top">
+        <div class="brand">Handle Capture</div>
+        <nav>
+          <button class="link" type="button" id="howBtn">How it works</button>
+          <button class="link" type="button" id="logout">Log out</button>
+        </nav>
+      </div>
+
+      <form class="create" id="f" novalidate>
+        <input type="tel" id="phone" placeholder="WhatsApp number, e.g. +91 98765 43210" autocomplete="off" aria-label="WhatsApp number">
+        <button class="btn" type="submit">Create link</button>
+      </form>
+      <p class="err" id="err" hidden></p>
+    </header>
+
+    <div class="bar">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-view="people" aria-selected="true">People</button>
+        <button class="tab" role="tab" data-view="activity" aria-selected="false">Activity</button>
+      </div>
+      <div class="summary" id="summary"></div>
+    </div>
+
+    <section id="people">
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Phone</th><th>Instagram</th><th>Status</th><th>Created</th><th><span hidden>Actions</span></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="activity" hidden>
+      <ul class="feed" id="feed"></ul>
+    </section>
+
+    <footer id="foot"></footer>
+  </div>
+</div>
+
+<!-- Invite message -->
+<dialog id="sendDlg">
+  <div class="dlg">
+    <button class="link close" type="button" data-close>Close</button>
+    <h3 id="sendTitle"></h3>
+    <p class="sub" id="sendSub"></p>
+    <div class="msg" id="sendMsg"></div>
+    <div class="actions">
+      <a class="btn" id="openWa" target="_blank" rel="noopener">Open in WhatsApp</a>
+      <button class="btn ghost" type="button" id="copyMsg">Copy message</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- How it works -->
+<dialog id="howDlg">
+  <div class="dlg">
+    <button class="link close" type="button" data-close>Close</button>
+    <h3>How it works</h3>
+    <p class="sub">What the person does after you send the message.</p>
+    <ol class="steps">
+      <li><b>Taps Step 1, then “Start chat”</b>This opens a chat with <span class="igName">your business account</span> on Instagram. We reply asking them to tap Step 2.</li>
+      <li><b>Taps Step 2</b>The same chat opens again, and Instagram tells us which link they used.</li>
+      <li><b>We match the link to the number</b>Each link belongs to one phone number. We save their @username and send “All set ✅”.</li>
+    </ol>
+    <p class="aside">Two links are needed because Instagram leaves out the link's code the first time someone messages a business. People who have messaged you before only need Step 2. Links only work on a phone, and expire after <span id="ttlText">a while</span>; use “New link” on an expired row to send a fresh one.</p>
+  </div>
+</dialog>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // Indian numbers as +91 98765 43210; anything else as plain +digits.
+  const fmtPhone = (p) => (/^91\d{10}$/.test(p) ? `+91 ${p.slice(2, 7)} ${p.slice(7)}` : "+" + p);
+  const short = (id) => "…" + String(id).slice(-4);
+
+  function ago(iso) {
+    const s = (Date.now() - Date.parse(iso)) / 1000;
+    if (s < 60) return "just now";
+    if (s < 3600) return Math.floor(s / 60) + " min ago";
+    if (s < 86400) return Math.floor(s / 3600) + " h ago";
+    return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  }
+  function timeLeft(iso) {
+    const m = (Date.parse(iso) - Date.now()) / 60000;
+    if (m < 60) return Math.max(1, Math.round(m)) + " min left";
+    if (m < 48 * 60) return Math.floor(m / 60) + " h left";
+    return Math.floor(m / 1440) + " days left";
+  }
+  function clock(iso) {
+    const d = new Date(iso), today = new Date().toDateString() === d.toDateString();
+    return today ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  }
+
+  // All API calls go through here so an expired session sends you back to the login screen.
+  async function api(url, body) {
+    const r = await fetch(url, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (r.status === 401 && !url.endsWith("/login")) { showLogin(); throw new Error("logged out"); }
+    return r.json();
+  }
+
+  function copy(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const was = btn.textContent;
+      btn.textContent = "Copied";
+      setTimeout(() => (btn.textContent = was), 1400);
+    });
+  }
+
+  function showError(msg) { $("err").textContent = msg; $("err").hidden = !msg; }
+
+  // ---- Dialogs ----
+  document.querySelectorAll("dialog").forEach((d) => {
+    d.addEventListener("click", (e) => { if (e.target === d || e.target.hasAttribute("data-close")) d.close(); });
+  });
+  $("howBtn").onclick = () => $("howDlg").showModal();
+
+  let current = null;
+  function showInvite(inv) {
+    current = inv;
+    $("sendTitle").textContent = "Invite for " + fmtPhone(inv.phone);
+    $("sendMsg").textContent = inv.message;
+    $("sendSub").textContent = "Send this on WhatsApp. They tap Step 1, then Step 2. The link expires " + new Date(inv.expiresAt).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + ".";
+    $("openWa").href = `https://wa.me/${inv.phone}?text=${encodeURIComponent(inv.message)}`;
+    $("sendDlg").showModal();
+  }
+  $("copyMsg").onclick = (e) => current && copy(current.message, e.target);
+
+  // ---- Create an invite ----
+  $("f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    showError("");
+    try {
+      const d = await api("/api/invites", { phone: $("phone").value });
+      if (d.error) return showError(d.error);
+      $("phone").value = "";
+      showInvite(d);
+      refresh();
+    } catch (err) { if (err.message !== "logged out") showError("Can't reach the server."); }
+  });
+
+  // A fresh invite for a number whose link expired.
+  async function renew(phone) {
+    showError("");
+    try {
+      const d = await api("/api/invites", { phone });
+      if (d.error) return showError(d.error);
+      showInvite(d);
+      refresh();
+    } catch (err) { if (err.message !== "logged out") showError("Can't reach the server."); }
+  }
+
+  // ---- Tabs ----
+  document.querySelectorAll(".tab").forEach((t) => (t.onclick = () => {
+    document.querySelectorAll(".tab").forEach((x) => x.setAttribute("aria-selected", x === t));
+    $("people").hidden = t.dataset.view !== "people";
+    $("activity").hidden = t.dataset.view !== "activity";
+  }));
+
+  // ---- People ----
+  function statusOf(inv, linkByPhone, linkByToken) {
+    if (inv.status === "linked")
+      return linkByToken[inv.token] ? { cls: "connected", text: "Connected" } : { cls: "unused", text: "Replaced", title: "This number was linked again later" };
+    const l = linkByPhone[inv.phone];
+    if (l && Date.parse(l.linkedAt) > Date.parse(inv.createdAt)) return { cls: "unused", text: "Replaced", title: "This number was linked through another invite" };
+    if (Date.now() > Date.parse(inv.expiresAt)) return { cls: "expired", text: "Expired", title: "Expired " + new Date(inv.expiresAt).toLocaleString() };
+    return { cls: "waiting", text: "Waiting", left: timeLeft(inv.expiresAt), title: "Expires " + new Date(inv.expiresAt).toLocaleString() };
+  }
+
+  let seen = null, invitesCache = [];
+  function renderPeople(invites, links) {
+    const linkByPhone = Object.fromEntries(links.map((l) => [l.phone, l]));
+    const linkByToken = Object.fromEntries(links.map((l) => [l.token, l]));
+    const counts = { connected: 0, waiting: 0, expired: 0 };
+
+    $("rows").innerHTML = invites.map((inv) => {
+      const st = statusOf(inv, linkByPhone, linkByToken);
+      if (counts[st.cls] !== undefined) counts[st.cls]++;
+      const l = linkByToken[inv.token];
+      const fresh = seen && st.cls === "connected" && !seen.has(inv.token);
+      const ig = l
+        ? `<a class="handle" href="https://instagram.com/${esc(l.username)}" target="_blank" rel="noopener" title="${esc([l.name, "ID " + l.igsid].filter(Boolean).join(" · "))}">@${esc(l.username)}</a>`
+        : `<span class="dash">—</span>`;
+      const action =
+        st.cls === "waiting" ? `<button class="btn ghost sm" type="button" data-send="${esc(inv.token)}">Send</button>`
+        : st.cls === "expired" ? `<button class="btn ghost sm" type="button" data-renew="${esc(inv.phone)}">New link</button>`
+        : "";
+      return `<tr class="${fresh ? "fresh" : ""}">
+        <td class="mono">${esc(fmtPhone(inv.phone))}</td>
+        <td>${ig}</td>
+        <td><span class="st ${st.cls}" ${st.title ? `title="${esc(st.title)}"` : ""}>${st.text}</span>${st.left ? `<span class="left">${st.left}</span>` : ""}</td>
+        <td class="when" title="${esc(new Date(inv.createdAt).toLocaleString())}">${ago(inv.createdAt)}</td>
+        <td>${action}</td></tr>`;
+    }).join("");
+    if (!invites.length) $("rows").innerHTML = `<tr><td colspan="5" class="empty">No invites yet. Enter a number above to create the first one.</td></tr>`;
+
+    seen = new Set(invites.filter((i) => i.status === "linked").map((i) => i.token));
+    document.querySelectorAll("[data-send]").forEach((b) => (b.onclick = () => {
+      const inv = invitesCache.find((i) => i.token === b.dataset.send);
+      if (inv) showInvite(inv);
+    }));
+    document.querySelectorAll("[data-renew]").forEach((b) => (b.onclick = () => renew(b.dataset.renew)));
+    $("summary").innerHTML = `<b>${counts.connected}</b> connected · <b>${counts.waiting}</b> waiting` + (counts.expired ? ` · <b>${counts.expired}</b> expired` : "");
+  }
+
+  // ---- Activity: webhook events as plain sentences ----
+  function describe(e, ctx) {
+    const p = e.parsed, raw = e.raw || {};
+    if (!p) return null; // our own outgoing messages
+    const linked = ctx.userById[p.igsid];
+    const who = linked ? `<b>@${esc(linked)}</b>` : `<b>Instagram user ${esc(short(p.igsid))}</b>`;
+    if (p.ref) {
+      const inv = ctx.invByToken[p.ref];
+      if (!inv) return { html: `${who} opened a link we don't recognise.`, why: "Ignored." };
+      if (inv.igsid === p.igsid) {
+        if (ctx.connected.has(p.ref)) return { html: `${who} opened their link again.`, why: "Already connected." };
+        ctx.connected.add(p.ref);
+        return { good: true, html: `${who} connected to ${esc(fmtPhone(inv.phone))}.` };
+      }
+      if (inv.igsid) return { html: `${who} opened a link that was already used.`, why: `Rejected. It belongs to ${esc(fmtPhone(inv.phone))}.` };
+      if (Date.parse(e.at) > Date.parse(inv.expiresAt)) return { html: `${who} opened an expired link for ${esc(fmtPhone(inv.phone))}.`, why: "Rejected. We asked them for a new one." };
+      return { html: `${who} opened the link for ${esc(fmtPhone(inv.phone))}.`, why: "Nothing was saved; check the server logs." };
+    }
+    if (raw.postback?.payload === "START_CHAT") return { html: `${who} tapped “Start chat”.`, why: linked ? "" : "Waiting for them to tap Step 2." };
+    if (raw.message) return { html: `${who} sent a message.`, why: linked ? "" : "Waiting for them to tap Step 2." };
+    if (raw.postback) return { html: `${who} tapped “${esc(raw.postback.title)}”.` };
+    return null;
+  }
+
+  function renderFeed(events, invites, links) {
+    const ctx = {
+      invByToken: Object.fromEntries(invites.map((i) => [i.token, i])),
+      userById: Object.fromEntries(links.map((l) => [l.igsid, l.username])),
+      connected: new Set(), // refs already reported as connected, so repeat taps read as repeats
+    };
+    // Describe oldest first so the first matching tap is the one marked "connected".
+    const items = [...events].reverse().map((e) => ({ at: e.at, ...(describe(e, ctx) || {}) })).filter((x) => x.html).reverse();
+    $("feed").innerHTML = items.slice(0, 30).map((x) =>
+      `<li class="${x.good ? "good" : ""}"><time title="${esc(new Date(x.at).toLocaleString())}">${clock(x.at)}</time><div class="what">${x.html}${x.why ? `<span class="why">${x.why}</span>` : ""}</div></li>`
+    ).join("") || `<li><time></time><div class="what why">Nothing yet. Taps and messages on Instagram show up here.</div></li>`;
+  }
+
+  // ---- Polling ----
+  let timer = null;
+  async function refresh() {
+    try {
+      const [invites, links, events] = await Promise.all(["/api/invites", "/api/links", "/api/events"].map((u) => api(u)));
+      invitesCache = invites;
+      renderPeople(invites, links);
+      renderFeed(events, invites, links);
+      $("foot").textContent = "Updated " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    } catch (err) {
+      if (err.message !== "logged out") $("foot").textContent = "Can't reach the server. Retrying…";
+    }
+  }
+
+  // ---- Login / start ----
+  function showLogin() {
+    clearInterval(timer);
+    $("app").hidden = true;
+    $("login").hidden = false;
+    $("pw").focus();
+  }
+
+  async function start() {
+    try {
+      const c = await api("/api/config");
+      document.querySelectorAll(".igName").forEach((el) => (el.textContent = "@" + c.igUsername));
+      $("ttlText").textContent = c.ttlText;
+    } catch (err) {
+      if (err.message === "logged out") return;
+    }
+    $("login").hidden = true;
+    $("app").hidden = false;
+    refresh();
+    clearInterval(timer);
+    timer = setInterval(refresh, 4000);
+  }
+
+  $("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("loginErr").hidden = true;
+    try {
+      const d = await api("/api/login", { password: $("pw").value });
+      if (d.error) { $("loginErr").textContent = d.error; $("loginErr").hidden = false; return; }
+      $("pw").value = "";
+      start();
+    } catch { $("loginErr").textContent = "Can't reach the server."; $("loginErr").hidden = false; }
+  });
+
+  $("logout").onclick = async () => { await fetch("/api/logout", { method: "POST" }); showLogin(); };
+
+  start();
+</script>
+</body>
+</html>

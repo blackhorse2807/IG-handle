@@ -1,0 +1,17 @@
+{
+  "name": "ig-handle-capture",
+  "version": "1.0.0",
+  "description": "Capture a user's Instagram handle from their phone number without them typing it (WhatsApp link -> ig.me ref -> Instagram webhook).",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "setup:instagram": "node scripts/setup-instagram.js",
+    "simulate": "node scripts/simulate-webhooks.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^6.21.0"
+  }
+}
