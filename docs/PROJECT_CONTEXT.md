@@ -71,4 +71,4 @@ Access token: `IG_TOKEN` is a **System User** token for innoviti-assgn (checked 
 
 Parked by the user: hosting and database upgrades (Vercel Hobby is non-commercial; Atlas M0 limits; no indexes; events collection grows; dashboard polls everything every 4 s).
 
-Deliverables: `Instagram-Handle-Capture-Full-Update.pptx` (9-slide combined deck: main update + contact list import; use this one), plus the two decks it was merged from: `Instagram-Handle-Capture-Update.pptx` (10 slides) and `Instagram-Handle-Capture-Addon-Import.pptx` (8 slides), `DELIVERABLES.md` (older design doc; still describes the earlier one-link Twilio flow and needs a refresh).
+Deliverables: `Instagram-Handle-Capture-Full-Update.pptx` (9-slide combined deck in Innoviti branding: main update + contact list import + production challenges; use this one), plus the two decks it was merged from: `Instagram-Handle-Capture-Update.pptx` (10 slides) and `Instagram-Handle-Capture-Addon-Import.pptx` (8 slides), `DELIVERABLES.md` (older design doc; still describes the earlier one-link Twilio flow and needs a refresh).
