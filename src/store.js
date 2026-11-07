@@ -5,6 +5,11 @@ const path = require("path");
 
 const EVENT_LIMIT = 50;
 
+function eventIsAbout(e, igsid, tokens) {
+  const ids = [e.parsed?.igsid, e.raw?.sender?.id, e.raw?.recipient?.id];
+  return (igsid && ids.includes(igsid)) || tokens.includes(e.parsed?.ref);
+}
+
 // ---------------------------------------------------------------------------
 // JSON file backend (local development)
 // ---------------------------------------------------------------------------
@@ -83,11 +88,24 @@ function fileStore(file) {
     async listContacts() {
       return Object.entries(db.contacts).map(([phone, v]) => ({ phone, ...v }));
     },
-    async deleteContact(phone) {
-      const had = phone in db.contacts;
+    // Erases everything about one phone number: contact, invites, Instagram link, and webhook
+    // events from that Instagram account or carrying one of its invite codes.
+    async deletePerson(phone) {
+      const igsid = db.links[phone]?.igsid;
+      const tokens = Object.keys(db.invites).filter((t) => db.invites[t].phone === phone);
+      const counts = {
+        contact: phone in db.contacts ? 1 : 0,
+        invites: tokens.length,
+        link: phone in db.links ? 1 : 0,
+      };
       delete db.contacts[phone];
+      delete db.links[phone];
+      tokens.forEach((t) => delete db.invites[t]);
+      const before = db.events.length;
+      db.events = db.events.filter((e) => !eventIsAbout(e, igsid, tokens));
+      counts.events = before - db.events.length;
       save();
-      return had;
+      return counts;
     },
     async logEvent(evt) {
       db.events.unshift(evt);
@@ -171,8 +189,19 @@ function mongoStore(uri) {
     async listContacts() {
       return (await (await col("contacts")).find().toArray()).map(fromDoc("phone"));
     },
-    async deleteContact(phone) {
-      return (await (await col("contacts")).deleteOne({ _id: phone })).deletedCount === 1;
+    async deletePerson(phone) {
+      const [contacts, invites, links, events] = await Promise.all(["contacts", "invites", "links", "events"].map(col));
+      const igsid = (await links.findOne({ _id: phone }))?.igsid;
+      const tokens = (await invites.find({ phone }, { projection: { _id: 1 } }).toArray()).map((d) => d._id);
+      const about = [{ "parsed.ref": { $in: tokens } }];
+      if (igsid) about.push({ "parsed.igsid": igsid }, { "raw.sender.id": igsid }, { "raw.recipient.id": igsid });
+      const [c, i, l, e] = await Promise.all([
+        contacts.deleteOne({ _id: phone }),
+        invites.deleteMany({ phone }),
+        links.deleteOne({ _id: phone }),
+        events.deleteMany({ $or: about }),
+      ]);
+      return { contact: c.deletedCount, invites: i.deletedCount, link: l.deletedCount, events: e.deletedCount };
     },
     async logEvent(evt) {
       await (await col("events")).insertOne(evt);

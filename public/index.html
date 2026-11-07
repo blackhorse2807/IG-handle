@@ -422,9 +422,18 @@
     } catch (err) { failed(err); }
   }
 
-  async function removeContact(p) {
-    if (!confirm(`Remove ${p.name || fmtPhone(p.phone)} from the list?`)) return;
-    try { await api(`/api/contacts/${p.phone}`, undefined, "DELETE"); refresh(); } catch (err) { failed(err); }
+  async function deletePerson(p) {
+    const who = p.name ? `${p.name} (${fmtPhone(p.phone)})` : fmtPhone(p.phone);
+    const what = p.status === "connected" ? `their phone number, @${p.link?.username || "handle"}, invites and activity`
+      : p.status === "new" ? "their phone number and name" : "their phone number, invites and activity";
+    if (!confirm(`Delete ${who}?\n\nThis erases ${what}. Any link already sent to them stops working. This can't be undone.`)) return;
+    try {
+      const d = await api(`/api/people/${p.phone}`, undefined, "DELETE");
+      if (d.error) return showError(d.error);
+      if ($("sendDlg").open && current?.phone === p.phone) $("sendDlg").close();
+      showNote(`Deleted ${who}.`);
+      refresh();
+    } catch (err) { failed(err); }
   }
 
   // ---- Tabs ----
@@ -516,7 +525,7 @@
         : p.status === "sent" ? `<button class="btn ghost sm" type="button" data-act="${p.phone}">Resend</button>`
         : p.status === "expired" ? `<button class="btn ghost sm" type="button" data-act="${p.phone}">New link</button>`
         : "";
-      const rm = p.status === "new" && p.contact ? `<button class="link" type="button" data-rm="${p.phone}" title="Remove from the list">Remove</button>` : "";
+      const rm = `<button class="link" type="button" data-rm="${p.phone}" title="Erase this person and all their data">Delete</button>`;
       return `<tr class="${fresh ? "fresh" : ""}">
         <td class="mono">${esc(fmtPhone(p.phone))}</td>
         <td class="who" title="${esc(p.name || "")}">${p.name ? esc(p.name) : `<span class="dash">—</span>`}</td>
@@ -540,7 +549,7 @@
     const b = e.target.closest("[data-act],[data-rm]");
     const p = b && people.find((x) => x.phone === (b.dataset.act || b.dataset.rm));
     if (!p) return;
-    b.dataset.act ? act(p) : removeContact(p);
+    b.dataset.act ? act(p) : deletePerson(p);
   });
   $("chips").addEventListener("click", (e) => {
     const b = e.target.closest("[data-filter]");
@@ -675,6 +684,7 @@
 
   // ---- Activity: webhook events as plain sentences ----
   function describe(e, ctx) {
+    if (e.deleted) return { html: "A person's data was deleted.", why: "Their number, Instagram details and activity were erased." };
     const p = e.parsed, raw = e.raw || {};
     if (!p) return null; // our own outgoing messages
     const linked = ctx.userById[p.igsid];

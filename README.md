@@ -82,6 +82,8 @@ Open `http://localhost:3000` and log in with `ADMIN_PASSWORD` from `.env`. Enter
 
 Importing doesn't message anyone, and no links are created yet: links expire, so each one is made when you press **Invite** on a row. The invite then greets the person by first name. After sending, **Next →** in the invite dialog moves on to the next person in the list who still needs a message.
 
+**Delete** on any row erases that person completely: their number and name, invites, Instagram link and their activity records. Use it for data-deletion requests. Any link already sent to them stops working, and the Activity tab keeps only an anonymous "A person's data was deleted." note.
+
 The **People** list has one row per phone number, with status **Not invited → Link ready → Sent → Connected** (or **Expired**), filters for each status, search by number, name or @username, and **Export** to download the rows shown as CSV (phone, name, status, Instagram handle and ID, and when each step happened).
 
 Each invite link works for one Instagram account and expires after `INVITE_TTL_HOURS` (24 hours by default; set in `.env` / Vercel). Someone opening an expired Step 2 link gets "This link has expired. Please ask for a new one." and nothing is saved; use **New link** on that row in the dashboard. Each invite keeps the expiry it was created with, so changing the setting only affects new invites.

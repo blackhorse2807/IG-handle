@@ -28,11 +28,11 @@ Proof of number ownership: only the phone's owner receives the WhatsApp message 
 
 - `src/server.js`: Express app. Admin login (password → JWT in httpOnly cookie, 7 days), `/api/invites`, `/api/links`, `/api/events`, `/api/config`, `GET /webhook` (verify handshake), `POST /webhook` (signature check → process events **before** replying, because Vercel freezes functions after the response).
 - `src/instagram.js`: Graph API calls (`getProfile`, `sendDM`), `X-Hub-Signature-256` check with `IG_APP_SECRET`, `extractReferral` (handles `referral.ref`, `postback.referral.ref`, `message.referral.ref`, echoes ignored), `ICEBREAKER = { question: "Start chat", payload: "START_CHAT" }`.
-- `src/importer.js`: phone number normalisation (`DEFAULT_COUNTRY_CODE`, default 91) and CSV / `.xlsx` parsing for the import. Endpoints: `POST /api/contacts/parse` (file as base64 → rows), `POST /api/contacts/import` (`dryRun` for the preview), `GET /api/contacts`, `DELETE /api/contacts/:phone`, `POST /api/invites/:token/sent`.
+- `src/importer.js`: phone number normalisation (`DEFAULT_COUNTRY_CODE`, default 91) and CSV / `.xlsx` parsing for the import. Endpoints: `POST /api/contacts/parse` (file as base64 → rows), `POST /api/contacts/import` (`dryRun` for the preview), `GET /api/contacts`, `POST /api/invites/:token/sent`, `DELETE /api/people/:phone` (full erasure for data-deletion requests: contact, invites, link, and that person's webhook events; only an anonymous `{ deleted: true }` event is kept; their old link stops working).
 - `src/store.js`: MongoDB when `MONGODB_URI` is set (collections `invites` keyed by token, `links` keyed by phone, `contacts` keyed by phone, `events`), else JSON file `data/db.json` (or `DB_FILE`).
 - `public/index.html`: dashboard (login, create link, import list, People list with status filters / search / export, Activity tab, invite dialog with Next, How it works dialog).
 - `api/index.js` + `vercel.json`: Vercel entry; rewrites `/api/*` and `/webhook` to the function, `public/` served static.
-- `scripts/setup-instagram.js`: one-time token check, webhook field subscription, ice breaker. `scripts/simulate-webhooks.js`: offline test suite (29 checks).
+- `scripts/setup-instagram.js`: one-time token check, webhook field subscription, ice breaker. `scripts/simulate-webhooks.js`: offline test suite (35 checks).
 
 ## 4. Where things live
 

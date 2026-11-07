@@ -112,6 +112,20 @@ async function invite(p) {
   const g = await invite(phone(8));
   await hook({ ...base(user(8)), referral: refObj(g.token) });
 
+  // Scenario 14: data-deletion request for a connected person erases everything about them
+  const delPhone = digits(30), delUser = user(30);
+  await post("/api/contacts/import", { rows: [{ row: 2, phone: delPhone, name: "Delete Me" }], source: "del.csv" });
+  const h = await invite(delPhone);
+  await startChat(delUser);
+  await hook({ ...base(delUser), referral: refObj(h.token) });
+  const linkedBefore = (await get("/api/links")).some((l) => l.phone === delPhone);
+  const delRes = await fetch(BASE + `/api/people/${delPhone}`, { method: "DELETE", headers: { Cookie: cookie } });
+  const delBody = await delRes.json();
+  const [dLinks, dInvites, dContacts, dEvents] = await Promise.all(["/api/links", "/api/invites", "/api/contacts", "/api/events"].map(get));
+  await hook({ ...base(delUser), referral: refObj(h.token) }); // old link tapped again after deletion
+  const relinked = (await get("/api/links")).some((l) => l.phone === delPhone || l.igsid === delUser);
+  const del404 = (await fetch(BASE + `/api/people/${delPhone}`, { method: "DELETE", headers: { Cookie: cookie } })).status;
+
   const links = await get("/api/links");
   const byPhone = Object.fromEntries(links.map((l) => [l.phone, l]));
   const mine = links.filter((l) => l.phone.startsWith(`919${RUN}`));
@@ -141,6 +155,12 @@ async function invite(p) {
   check("S12 invite marked as sent", sent.status === 200 && !!sentInvite?.sentAt);
   check("S13 new invite has a future expiresAt", Date.parse(g.expiresAt) > Date.now());
   check("S13 invite within its expiry links phone 8", byPhone[digits(8)]?.igsid === user(8));
+  check("S14 person was connected before deletion", linkedBefore);
+  check("S14 delete reports contact, invite and link removed", delRes.status === 200 && delBody.deleted?.contact === 1 && delBody.deleted?.invites === 1 && delBody.deleted?.link === 1);
+  check("S14 nothing left in links, invites or contacts", !dLinks.some((l) => l.phone === delPhone) && !dInvites.some((i) => i.phone === delPhone) && !dContacts.some((c) => c.phone === delPhone));
+  check("S14 their activity is erased, only an anonymous note remains", !dEvents.some((e) => JSON.stringify(e).includes(delUser) || JSON.stringify(e).includes(h.token)) && dEvents.some((e) => e.deleted));
+  check("S14 their old link no longer works", !relinked);
+  check("S14 deleting again returns 404", del404 === 404);
   check("Usernames resolved for every link", mine.every((l) => !!l.username));
 
   console.log(`\n${passed} passed, ${failed} failed`);

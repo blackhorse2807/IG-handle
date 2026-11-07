@@ -209,9 +209,15 @@ app.post("/api/contacts/import", route(async (req, res) => {
 }));
 
 app.get("/api/contacts", route(async (_req, res) => res.json(await store.listContacts())));
-app.delete("/api/contacts/:phone", route(async (req, res) => {
-  const ok = await store.deleteContact(String(req.params.phone).replace(/\D/g, ""));
-  res.status(ok ? 200 : 404).json(ok ? { ok: true } : { error: "Not in the list." });
+// Erase a person completely (data-deletion requests): contact, invites, Instagram link and their
+// webhook events. Their old invite link stops working. Only an anonymous "deleted" note is kept.
+app.delete("/api/people/:phone", route(async (req, res) => {
+  const phone = String(req.params.phone).replace(/\D/g, "");
+  const counts = await store.deletePerson(phone);
+  if (!counts.contact && !counts.invites && !counts.link) return res.status(404).json({ error: "No one with that number." });
+  await store.logEvent({ at: new Date().toISOString(), deleted: true });
+  console.log(`DELETED a person: ${JSON.stringify(counts)}`);
+  res.json({ ok: true, deleted: counts });
 }));
 
 app.get("/api/config", (_req, res) =>
