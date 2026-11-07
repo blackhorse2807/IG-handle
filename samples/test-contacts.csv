@@ -1,0 +1,15 @@
+Name,Mobile,City,What this row tests
+Riya Verma,+91 90000 00001,Bengaluru,full international format
+Amit Shah,9000000002,Mumbai,"10 digits, no country code -> +91 added"
+"Verma, Neha",09000000003,Delhi,leading 0 + comma in name (CSV quoting)
+Karan Mehta,+91-90000-00004,Pune,dashes
+Pooja Rao,(+91) 90000 00005,Chennai,brackets
+Sanjay Kumar,919000000006,Jaipur,"12 digits, country code without +"
+,9000000007,Kolkata,no name
+Oliver Smith,+44 7700 900123,London,"non-Indian number, kept as is"
+Amit Shah again,+91 90000 00002,Mumbai,DUPLICATE of row 3 -> counted once
+Divya Iyer,n/a,Hyderabad,INVALID: not a number -> skipped
+Rahul Jain,12345,Indore,INVALID: too few digits -> skipped
+Meera Nair,9.19E+11,Kochi,INVALID: Excel-shortened -> skipped
+Arjun Das,,Patna,INVALID: empty -> skipped
+Sneha Patil,90000 00008,Nagpur,space in the middle
