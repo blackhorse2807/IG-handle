@@ -13,8 +13,9 @@ function fileStore(file) {
   try {
     db = JSON.parse(fs.readFileSync(file, "utf8"));
   } catch {
-    db = { invites: {}, links: {}, events: [] };
+    db = {};
   }
+  db = { invites: {}, links: {}, events: [], contacts: {}, ...db };
   const save = () => {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(db, null, 2));
@@ -37,6 +38,13 @@ function fileStore(file) {
       save();
       return true;
     },
+    async markSent(token, sentAt) {
+      const inv = db.invites[token];
+      if (!inv) return false;
+      if (!inv.sentAt) db.invites[token] = { ...inv, sentAt };
+      save();
+      return true;
+    },
     async listInvites() {
       return Object.entries(db.invites)
         .map(([token, v]) => ({ token, ...v }))
@@ -51,6 +59,35 @@ function fileStore(file) {
     },
     async findLinkByIgsid(igsid) {
       return (await this.listLinks()).find((l) => l.igsid === igsid);
+    },
+    // contacts: [{ phone, name, seq }]. New phones are added; existing ones get a new name only if one is given.
+    async upsertContacts(contacts, { source, importedAt }) {
+      let added = 0, updated = 0;
+      for (const { phone, name, seq } of contacts) {
+        const old = db.contacts[phone];
+        if (old) {
+          updated++;
+          if (name) db.contacts[phone] = { ...old, name };
+        } else {
+          added++;
+          db.contacts[phone] = { name: name || null, source, importedAt, seq };
+        }
+      }
+      save();
+      return { added, updated };
+    },
+    async getContact(phone) {
+      const c = db.contacts[phone];
+      return c && { phone, ...c };
+    },
+    async listContacts() {
+      return Object.entries(db.contacts).map(([phone, v]) => ({ phone, ...v }));
+    },
+    async deleteContact(phone) {
+      const had = phone in db.contacts;
+      delete db.contacts[phone];
+      save();
+      return had;
     },
     async logEvent(evt) {
       db.events.unshift(evt);
@@ -92,6 +129,11 @@ function mongoStore(uri) {
       );
       return res.modifiedCount === 1;
     },
+    async markSent(token, sentAt) {
+      const c = await col("invites");
+      const res = await c.updateOne({ _id: token, sentAt: { $exists: false } }, { $set: { sentAt } });
+      return res.matchedCount === 1 || !!(await c.findOne({ _id: token }, { projection: { _id: 1 } }));
+    },
     async listInvites() {
       return (await (await col("invites")).find().sort({ createdAt: -1 }).toArray()).map(fromDoc("token"));
     },
@@ -104,6 +146,33 @@ function mongoStore(uri) {
     async findLinkByIgsid(igsid) {
       const doc = await (await col("links")).findOne({ igsid });
       return doc && fromDoc("phone")(doc);
+    },
+    async upsertContacts(contacts, { source, importedAt }) {
+      if (!contacts.length) return { added: 0, updated: 0 };
+      const res = await (await col("contacts")).bulkWrite(
+        contacts.map(({ phone, name, seq }) => ({
+          updateOne: {
+            filter: { _id: phone },
+            update: {
+              $setOnInsert: { source, importedAt, seq, ...(name ? {} : { name: null }) },
+              ...(name ? { $set: { name } } : {}),
+            },
+            upsert: true,
+          },
+        })),
+        { ordered: false }
+      );
+      return { added: res.upsertedCount, updated: res.matchedCount };
+    },
+    async getContact(phone) {
+      const doc = await (await col("contacts")).findOne({ _id: phone });
+      return doc && fromDoc("phone")(doc);
+    },
+    async listContacts() {
+      return (await (await col("contacts")).find().toArray()).map(fromDoc("phone"));
+    },
+    async deleteContact(phone) {
+      return (await (await col("contacts")).deleteOne({ _id: phone })).deletedCount === 1;
     },
     async logEvent(evt) {
       await (await col("events")).insertOne(evt);

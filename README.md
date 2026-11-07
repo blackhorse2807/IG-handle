@@ -13,6 +13,7 @@ See `DELIVERABLES.md` for the design, verification strategy and test-run record.
 | `src/server.js` | Express server: admin login (JWT cookie), create invites, receive Instagram webhooks, link accounts |
 | `src/instagram.js` | Instagram API calls: profile lookup, DM reply, signature check, webhook parsing |
 | `src/store.js` | Storage: MongoDB when `MONGODB_URI` is set, otherwise the JSON file `data/db.json` |
+| `src/importer.js` | Contact import: reads CSV / Excel (.xlsx) files and normalises phone numbers |
 | `public/index.html` | Admin page: log in, create invite messages, track who has connected, read webhook activity in plain words |
 | `api/index.js`, `vercel.json` | Vercel deployment: runs the Express app as one serverless function, serves `public/` as static files |
 | `scripts/setup-instagram.js` | One-time: checks token, subscribes webhooks, sets the "Start chat" ice breaker |
@@ -73,7 +74,15 @@ This confirms the token, subscribes the account to the webhook fields, and creat
 npm start
 ```
 
-Open `http://localhost:3000` and log in with `ADMIN_PASSWORD` from `.env`. Enter the user's WhatsApp number and click **Create link**. Then either click **Open in WhatsApp** (opens a chat with that number with the message pre-typed) or **Copy message** and paste it into WhatsApp yourself.
+Open `http://localhost:3000` and log in with `ADMIN_PASSWORD` from `.env`. Enter the user's WhatsApp number and click **Create link**. Then either click **Open in WhatsApp** (opens a chat with that number with the message pre-typed) or **Copy message** and paste it into WhatsApp yourself. Either one marks the invite as **Sent**.
+
+### Importing a list
+
+**Import list** takes a `.csv` or `.xlsx` file (up to 3 MB / 5,000 rows) with one person per row. Pick the phone number column and, optionally, a name column; both are guessed from the column titles. Numbers without a country code get `DEFAULT_COUNTRY_CODE` (91 unless set). Before anything is saved, the dialog shows how many numbers are new, already listed or already connected, which ones repeat, and which rows can't be read (for example `9.19877E+11`, which Excel produces when a long number isn't formatted as text). Old `.xls` files must be saved again as `.xlsx` or CSV.
+
+Importing doesn't message anyone, and no links are created yet: links expire, so each one is made when you press **Invite** on a row. The invite then greets the person by first name. After sending, **Next →** in the invite dialog moves on to the next person in the list who still needs a message.
+
+The **People** list has one row per phone number, with status **Not invited → Link ready → Sent → Connected** (or **Expired**), filters for each status, search by number, name or @username, and **Export** to download the rows shown as CSV (phone, name, status, Instagram handle and ID, and when each step happened).
 
 Each invite link works for one Instagram account and expires after `INVITE_TTL_HOURS` (24 hours by default; set in `.env` / Vercel). Someone opening an expired Step 2 link gets "This link has expired. Please ask for a new one." and nothing is saved; use **New link** on that row in the dashboard. Each invite keeps the expiry it was created with, so changing the setting only affects new invites.
 

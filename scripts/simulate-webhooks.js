@@ -92,8 +92,21 @@ async function invite(p) {
   const f = await invite(phone(7));
   await Promise.all([hook({ ...base(user(71)), referral: refObj(f.token) }), hook({ ...base(user(72)), referral: refObj(f.token) })]);
 
-  // Scenario 12: the CSV import endpoint is gone
-  const bulkStatus = (await post("/api/invites/bulk", { phones: [phone(20)] })).status;
+  // Scenario 12: import a list. CSV with a header, a local number (no country code), a duplicate,
+  // an Excel-mangled number and junk; then invite one of them and mark the invite sent.
+  const local = `9${RUN}021`; // 10 digits, no country code
+  const csv = `Name,Mobile\n"Riya, Verma",${phone(20)}\nAmit,${local}\nAmit again,+${digits(21)}\nBad,9.19877E+11\nJunk,hello\n`;
+  const parsed = await (await post("/api/contacts/parse", { filename: "list.csv", data: Buffer.from(csv).toString("base64") })).json();
+  const rows = (parsed.rows || []).slice(1).map((r, i) => ({ row: i + 2, name: r[0], phone: r[1] }));
+  const dry = await (await post("/api/contacts/import", { rows, source: "list.csv", countryCode: "91", dryRun: true })).json();
+  const contactsBefore = await get("/api/contacts");
+  const imp = await (await post("/api/contacts/import", { rows, source: "list.csv", countryCode: "91" })).json();
+  const again = await (await post("/api/contacts/import", { rows, source: "list.csv", countryCode: "91" })).json();
+  const contacts = await get("/api/contacts");
+  const xls = await post("/api/contacts/parse", { filename: "old.xls", data: Buffer.from("x").toString("base64") });
+  const named = await invite(digits(20));
+  const sent = await post(`/api/invites/${named.token}/sent`, {});
+  const sentInvite = (await get("/api/invites")).find((i) => i.token === named.token);
 
   // Scenario 13: a fresh invite carries an expiry in the future and links normally
   const g = await invite(phone(8));
@@ -117,7 +130,15 @@ async function invite(p) {
   check("S10 typed message alone links nothing", !afterTyped.some((l) => l.phone === digits(5)));
   check("S10 Step 2 after typed message links phone 5", byPhone[digits(5)]?.igsid === user(5));
   check("S11 simultaneous claims: exactly one account linked", [user(71), user(72)].includes(byPhone[digits(7)]?.igsid));
-  check("S12 /api/invites/bulk no longer exists", bulkStatus === 404);
+  check("S12 CSV parsed (quoted comma kept in one cell)", parsed.rows?.[1]?.[0] === "Riya, Verma" && parsed.rows.length === 6);
+  check("S12 dry run counts 2 valid, 1 duplicate, 2 unreadable", dry.valid === 2 && dry.duplicates === 1 && dry.invalidCount === 2);
+  check("S12 dry run saves nothing", !contactsBefore.some((c) => c.phone === digits(20)));
+  check("S12 import adds 2 contacts", imp.added === 2 && contacts.some((c) => c.phone === digits(20) && c.name === "Riya, Verma"));
+  check("S12 number without country code gets +91", contacts.some((c) => c.phone === digits(21)));
+  check("S12 importing again adds nothing", again.added === 0 && again.updated === 2);
+  check("S12 .xls refused with a clear error", xls.status === 400);
+  check("S12 invite for an imported contact greets by first name", named.message?.startsWith("Hi Riya!"));
+  check("S12 invite marked as sent", sent.status === 200 && !!sentInvite?.sentAt);
   check("S13 new invite has a future expiresAt", Date.parse(g.expiresAt) > Date.now());
   check("S13 invite within its expiry links phone 8", byPhone[digits(8)]?.igsid === user(8));
   check("Usernames resolved for every link", mine.every((l) => !!l.username));

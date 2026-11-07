@@ -32,6 +32,8 @@
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* Controls */
+  input[type=tel], input[type=password], input[type=search], input[type=text], select { padding: 9px 12px; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; min-width: 0; }
+  select { padding-right: 28px; }
   input[type=tel], input[type=password] { padding: 9px 12px; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; min-width: 0; }
   input::placeholder { color: var(--none); }
   .btn { font: inherit; font-size: 14px; font-weight: 500; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
@@ -41,6 +43,7 @@
   .link { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; color: var(--muted); cursor: pointer; }
   .link:hover { color: var(--ink); }
   .err { color: var(--bad); font-size: 13px; margin: 8px 0 0; }
+  .note { color: var(--accent); font-size: 13px; margin: 8px 0 0; }
 
   /* Header */
   header { padding: 28px 0 0; }
@@ -61,6 +64,17 @@
   .summary { font-size: 13.5px; color: var(--muted); padding-bottom: 10px; }
   .summary b { color: var(--ink); font-weight: 500; }
 
+  /* Filters */
+  .tools { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 14px 0 2px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font: inherit; font-size: 13px; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; color: var(--soft); cursor: pointer; }
+  .chip:hover { background: var(--hover); }
+  .chip[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .chip .n { opacity: 0.7; margin-left: 4px; }
+  .find { display: flex; gap: 8px; }
+  .find input { width: 200px; padding: 6px 10px; font-size: 13.5px; }
+  .more { text-align: center; padding: 14px 0 0; }
+
   /* Table */
   .scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -78,6 +92,13 @@
   .st.waiting { color: var(--wait); }
   .st.unused { color: var(--none); }
   .st.expired { color: var(--bad); }
+  .st.ready { color: var(--soft); }
+  .st.ready::before { background: transparent; border: 1.5px solid currentColor; width: 6px; height: 6px; }
+  .st.new { color: var(--none); }
+  .st.new::before { background: transparent; border: 1.5px dashed currentColor; width: 6px; height: 6px; }
+  .who { color: var(--soft); max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+  .rowact { display: inline-flex; gap: 10px; align-items: center; }
+  .rowact .link { font-size: 13px; }
   .left { color: var(--muted); font-size: 12.5px; margin-left: 6px; }
   .when { color: var(--muted); font-size: 13px; }
   .empty { color: var(--muted); padding: 40px 0; text-align: center; border-top: 1px solid var(--line); }
@@ -104,6 +125,27 @@
   .msg { white-space: pre-wrap; word-break: break-word; background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-size: 13.5px; color: var(--soft); max-height: 260px; overflow: auto; }
   .actions { display: flex; gap: 8px; margin-top: 14px; }
   .actions > .btn { flex: 1; }
+  .next { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13.5px; color: var(--muted); }
+
+  /* Import */
+  .drop { display: block; border: 1.5px dashed var(--line-strong); border-radius: 10px; padding: 26px 16px; text-align: center; color: var(--soft); cursor: pointer; font-size: 14px; }
+  .drop:hover, .drop.over { background: var(--hover); border-color: var(--accent); }
+  .drop b { color: var(--ink); font-weight: 500; }
+  .drop small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+  .drop input { display: none; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 14px 0 0; }
+  .grid label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+  .grid .wide { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--soft); }
+  .grid .cc { display: flex; align-items: center; gap: 6px; }
+  .grid .cc input { width: 70px; }
+  .preview { margin-top: 14px; border: 1px solid var(--line); border-radius: 8px; overflow: auto; max-height: 170px; }
+  .preview table { font-size: 13px; }
+  .preview th, .preview td { padding: 6px 10px; height: auto; text-align: left !important; }
+  .preview th:first-child, .preview td:first-child { padding-left: 10px; }
+  .stats { margin: 12px 0 0; font-size: 13.5px; color: var(--soft); }
+  .stats b { color: var(--ink); font-weight: 500; }
+  .stats .bad { color: var(--bad); display: block; font-size: 12.5px; margin-top: 4px; }
+  .file { font-size: 13.5px; color: var(--soft); display: flex; justify-content: space-between; gap: 8px; }
   .close { float: right; margin: -4px -4px 0 0; }
   ol.steps { margin: 0; padding-left: 20px; }
   ol.steps li { margin-bottom: 12px; color: var(--soft); font-size: 14px; }
@@ -121,6 +163,8 @@
     .create input { flex-basis: 100%; }
     .create .btn { flex: 1; }
     .summary { display: none; }
+    .find, .find input { width: 100%; }
+    .grid { grid-template-columns: 1fr; }
   }
   @media (prefers-reduced-motion: reduce) { tr.fresh td { animation: none; } }
 </style>
@@ -149,8 +193,10 @@
       <form class="create" id="f" novalidate>
         <input type="tel" id="phone" placeholder="WhatsApp number, e.g. +91 98765 43210" autocomplete="off" aria-label="WhatsApp number">
         <button class="btn" type="submit">Create link</button>
+        <button class="btn ghost" type="button" id="importBtn">Import list</button>
       </form>
       <p class="err" id="err" hidden></p>
+      <p class="note" id="note" hidden></p>
     </header>
 
     <div class="bar">
@@ -162,12 +208,20 @@
     </div>
 
     <section id="people">
+      <div class="tools">
+        <div class="chips" id="chips" role="group" aria-label="Filter by status"></div>
+        <div class="find">
+          <input type="search" id="q" placeholder="Search number or name" aria-label="Search">
+          <button class="btn ghost sm" type="button" id="exportBtn" title="Download the rows shown as a CSV file">Export</button>
+        </div>
+      </div>
       <div class="scroll">
         <table>
-          <thead><tr><th>Phone</th><th>Instagram</th><th>Status</th><th>Created</th><th><span hidden>Actions</span></th></tr></thead>
+          <thead><tr><th>Phone</th><th>Name</th><th>Instagram</th><th>Status</th><th>Last update</th><th><span hidden>Actions</span></th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
+      <div class="more" id="more" hidden><button class="btn ghost sm" type="button" id="moreBtn"></button></div>
     </section>
 
     <section id="activity" hidden>
@@ -189,6 +243,39 @@
       <a class="btn" id="openWa" target="_blank" rel="noopener">Open in WhatsApp</a>
       <button class="btn ghost" type="button" id="copyMsg">Copy message</button>
     </div>
+    <div class="next" id="nextBox" hidden>
+      <span id="nextText"></span>
+      <button class="btn ghost sm" type="button" id="nextBtn">Next →</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Import a list -->
+<dialog id="importDlg">
+  <div class="dlg">
+    <button class="link close" type="button" data-close>Close</button>
+    <h3>Import a list</h3>
+    <p class="sub">Add phone numbers from a CSV or Excel file. Nobody is messaged yet: you invite each person from the list when you're ready.</p>
+
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".csv,.xlsx,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      <b>Choose a file</b> or drop it here
+      <small>.csv or .xlsx, up to 3 MB. One row per person, with a phone number column; a name column is optional.</small>
+    </label>
+
+    <div id="mapping" hidden>
+      <div class="file"><span id="fileName"></span><button class="link" type="button" id="otherFile">Choose another file</button></div>
+      <div class="grid">
+        <label>Phone number column<select id="phoneCol"></select></label>
+        <label>Name column<select id="nameCol"></select></label>
+        <label class="wide"><input type="checkbox" id="hasHeader"> First row has column titles</label>
+        <label class="wide cc">Numbers without a country code are <input type="text" id="cc" inputmode="numeric" aria-label="Country code"> numbers</label>
+      </div>
+      <div class="preview"><table><thead><tr><th>Row</th><th>Phone</th><th>Name</th></tr></thead><tbody id="prevRows"></tbody></table></div>
+      <p class="stats" id="stats"></p>
+      <div class="actions"><button class="btn" type="button" id="doImport" disabled>Import</button></div>
+    </div>
+    <p class="err" id="importErr" hidden></p>
   </div>
 </dialog>
 
@@ -233,8 +320,9 @@
   }
 
   // All API calls go through here so an expired session sends you back to the login screen.
-  async function api(url, body) {
-    const r = await fetch(url, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  async function api(url, body, method) {
+    const opts = body === undefined && !method ? {} : { method: method || "POST", headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) };
+    const r = await fetch(url, opts);
     if (r.status === 401 && !url.endsWith("/login")) { showLogin(); throw new Error("logged out"); }
     return r.json();
   }
@@ -247,7 +335,14 @@
     });
   }
 
-  function showError(msg) { $("err").textContent = msg; $("err").hidden = !msg; }
+  function showError(msg) { $("err").textContent = msg; $("err").hidden = !msg; if (msg) showNote(""); }
+  let noteTimer;
+  function showNote(msg) {
+    $("note").textContent = msg; $("note").hidden = !msg;
+    clearTimeout(noteTimer);
+    if (msg) noteTimer = setTimeout(() => ($("note").hidden = true), 8000);
+  }
+  const failed = (err) => { if (err.message !== "logged out") showError("Can't reach the server."); };
 
   // ---- Dialogs ----
   document.querySelectorAll("dialog").forEach((d) => {
@@ -255,39 +350,81 @@
   });
   $("howBtn").onclick = () => $("howDlg").showModal();
 
+  // ---- Invite dialog ----
   let current = null;
   function showInvite(inv) {
     current = inv;
-    $("sendTitle").textContent = "Invite for " + fmtPhone(inv.phone);
+    const p = people.find((x) => x.phone === inv.phone);
+    const name = inv.name || p?.name;
+    $("sendTitle").textContent = "Invite for " + (name ? `${name} (${fmtPhone(inv.phone)})` : fmtPhone(inv.phone));
     $("sendMsg").textContent = inv.message;
-    $("sendSub").textContent = "Send this on WhatsApp. They tap Step 1, then Step 2. The link expires " + new Date(inv.expiresAt).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + ".";
+    $("sendSub").textContent = (inv.sentAt ? "Already sent " + ago(inv.sentAt) + ". You can send it again. " : "Send this on WhatsApp. ") +
+      "The link expires " + new Date(inv.expiresAt).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + ".";
     $("openWa").href = `https://wa.me/${inv.phone}?text=${encodeURIComponent(inv.message)}`;
-    $("sendDlg").showModal();
+    updateNext();
+    if (!$("sendDlg").open) $("sendDlg").showModal();
   }
-  $("copyMsg").onclick = (e) => current && copy(current.message, e.target);
+
+  // Opening WhatsApp or copying the message marks the invite as sent.
+  async function markSent() {
+    if (!current || current.sentAt) return;
+    current.sentAt = new Date().toISOString();
+    try { await api(`/api/invites/${encodeURIComponent(current.token)}/sent`, {}); } catch {}
+    refresh();
+  }
+  $("openWa").addEventListener("click", markSent);
+  $("copyMsg").onclick = (e) => { if (current) { copy(current.message, e.target); markSent(); } };
+
+  // The next person in the list (as currently filtered) who still needs a message.
+  const NEEDS_SEND = new Set(["new", "ready", "expired"]);
+  function nextAfter(phone) {
+    const list = visible();
+    const i = list.findIndex((p) => p.phone === phone);
+    return list.slice(i + 1).find((p) => NEEDS_SEND.has(p.status) && p.phone !== phone);
+  }
+  function updateNext() {
+    const n = current && nextAfter(current.phone);
+    $("nextBox").hidden = !n;
+    if (n) $("nextText").textContent = "Next: " + (n.name ? `${n.name} · ` : "") + fmtPhone(n.phone);
+  }
+  $("nextBtn").onclick = () => {
+    const n = current && nextAfter(current.phone);
+    if (n) act(n);
+  };
 
   // ---- Create an invite ----
+  async function createInvite(phone) {
+    showError("");
+    const d = await api("/api/invites", { phone });
+    if (d.error) { showError(d.error); return null; }
+    return d;
+  }
+
   $("f").addEventListener("submit", async (e) => {
     e.preventDefault();
-    showError("");
     try {
-      const d = await api("/api/invites", { phone: $("phone").value });
-      if (d.error) return showError(d.error);
+      const d = await createInvite($("phone").value);
+      if (!d) return;
       $("phone").value = "";
+      await refresh();
       showInvite(d);
-      refresh();
-    } catch (err) { if (err.message !== "logged out") showError("Can't reach the server."); }
+    } catch (err) { failed(err); }
   });
 
-  // A fresh invite for a number whose link expired.
-  async function renew(phone) {
-    showError("");
+  // The row button: create a link if there isn't a usable one, then show the message.
+  async function act(p) {
     try {
-      const d = await api("/api/invites", { phone });
-      if (d.error) return showError(d.error);
+      if (p.status === "ready" || p.status === "sent") return showInvite(p.invite);
+      const d = await createInvite(p.phone);
+      if (!d) return;
+      await refresh();
       showInvite(d);
-      refresh();
-    } catch (err) { if (err.message !== "logged out") showError("Can't reach the server."); }
+    } catch (err) { failed(err); }
+  }
+
+  async function removeContact(p) {
+    if (!confirm(`Remove ${p.name || fmtPhone(p.phone)} from the list?`)) return;
+    try { await api(`/api/contacts/${p.phone}`, undefined, "DELETE"); refresh(); } catch (err) { failed(err); }
   }
 
   // ---- Tabs ----
@@ -297,50 +434,243 @@
     $("activity").hidden = t.dataset.view !== "activity";
   }));
 
-  // ---- People ----
-  function statusOf(inv, linkByPhone, linkByToken) {
-    if (inv.status === "linked")
-      return linkByToken[inv.token] ? { cls: "connected", text: "Connected" } : { cls: "unused", text: "Replaced", title: "This number was linked again later" };
-    const l = linkByPhone[inv.phone];
-    if (l && Date.parse(l.linkedAt) > Date.parse(inv.createdAt)) return { cls: "unused", text: "Replaced", title: "This number was linked through another invite" };
-    if (Date.now() > Date.parse(inv.expiresAt)) return { cls: "expired", text: "Expired", title: "Expired " + new Date(inv.expiresAt).toLocaleString() };
-    return { cls: "waiting", text: "Waiting", left: timeLeft(inv.expiresAt), title: "Expires " + new Date(inv.expiresAt).toLocaleString() };
+  // ---- People: one row per phone number, from the imported list, invites and links ----
+  // status: new (not invited) · ready (link made, not sent) · sent · connected · expired
+  const STATUS = {
+    new: { text: "Not invited" },
+    ready: { text: "Link ready", title: "Link created but not sent yet" },
+    sent: { text: "Sent" },
+    connected: { text: "Connected" },
+    expired: { text: "Expired" },
+  };
+  const FILTERS = [["all", "All"], ["new", "Not invited"], ["ready", "Link ready"], ["sent", "Sent"], ["connected", "Connected"], ["expired", "Expired"]];
+  const PAGE = 200;
+  let people = [], filter = "all", query = "", limit = PAGE;
+
+  function buildPeople(contacts, invites, links) {
+    const by = new Map();
+    const get = (phone) => by.get(phone) || by.set(phone, { phone, name: null, addedAt: null, seq: 0 }).get(phone);
+    for (const c of contacts) Object.assign(get(c.phone), { name: c.name, addedAt: c.importedAt, seq: c.seq || 0, contact: true });
+    for (const inv of invites) { // newest first
+      const p = get(inv.phone);
+      p.invite ??= inv;
+      p.name ??= inv.name || null;
+      if (!p.contact && (!p.addedAt || inv.createdAt < p.addedAt)) p.addedAt = inv.createdAt;
+    }
+    for (const l of links) { const p = get(l.phone); p.link = l; p.addedAt ??= l.linkedAt; }
+
+    const list = [...by.values()];
+    for (const p of list) {
+      const inv = p.invite;
+      p.status = p.link || inv?.status === "linked" ? "connected"
+        : !inv ? "new"
+        : Date.now() > Date.parse(inv.expiresAt) ? "expired"
+        : inv.sentAt ? "sent" : "ready";
+      p.updatedAt = p.link?.linkedAt || inv?.sentAt || inv?.createdAt || p.addedAt;
+    }
+    // Stable order (newest additions first, file order within an import), so rows don't jump as you send.
+    return list.sort((a, b) => (b.addedAt || "").localeCompare(a.addedAt || "") || a.seq - b.seq);
   }
 
-  let seen = null, invitesCache = [];
-  function renderPeople(invites, links) {
-    const linkByPhone = Object.fromEntries(links.map((l) => [l.phone, l]));
-    const linkByToken = Object.fromEntries(links.map((l) => [l.token, l]));
-    const counts = { connected: 0, waiting: 0, expired: 0 };
+  function visible() {
+    const q = query.trim().toLowerCase(), qd = q.replace(/\D/g, "");
+    return people.filter((p) =>
+      (filter === "all" || p.status === filter) &&
+      (!q || (p.name || "").toLowerCase().includes(q) || (qd && p.phone.includes(qd)) || (p.link?.username || "").toLowerCase().includes(q.replace(/^@/, "")))
+    );
+  }
 
-    $("rows").innerHTML = invites.map((inv) => {
-      const st = statusOf(inv, linkByPhone, linkByToken);
-      if (counts[st.cls] !== undefined) counts[st.cls]++;
-      const l = linkByToken[inv.token];
-      const fresh = seen && st.cls === "connected" && !seen.has(inv.token);
+  function statusCell(p) {
+    const inv = p.invite, st = STATUS[p.status];
+    let extra = "", title = st.title || "";
+    if (p.status === "sent" || p.status === "ready") { extra = timeLeft(inv.expiresAt); title = "Link expires " + new Date(inv.expiresAt).toLocaleString(); }
+    if (p.status === "expired") title = "Expired " + new Date(inv.expiresAt).toLocaleString();
+    return `<span class="st ${p.status}" ${title ? `title="${esc(title)}"` : ""}>${st.text}</span>${extra ? `<span class="left">${extra}</span>` : ""}`;
+  }
+
+  function updateText(p) {
+    const verb = p.status === "connected" ? "Connected" : p.status === "new" ? "Added" : p.invite?.sentAt ? "Sent" : "Link made";
+    return `${verb} ${ago(p.updatedAt)}`;
+  }
+
+  let seen = null, lastHtml = "";
+  function renderPeople() {
+    const counts = Object.fromEntries(FILTERS.map(([k]) => [k, 0]));
+    for (const p of people) { counts.all++; counts[p.status]++; }
+    $("chips").innerHTML = FILTERS.map(([k, label]) =>
+      k === "all" || counts[k] || filter === k
+        ? `<button class="chip" type="button" data-filter="${k}" aria-pressed="${filter === k}">${label}<span class="n">${counts[k]}</span></button>`
+        : ""
+    ).join("");
+
+    const list = visible(), shown = list.slice(0, limit);
+    const html = shown.map((p) => {
+      const l = p.link;
+      const fresh = seen && p.status === "connected" && !seen.has(p.phone);
       const ig = l
         ? `<a class="handle" href="https://instagram.com/${esc(l.username)}" target="_blank" rel="noopener" title="${esc([l.name, "ID " + l.igsid].filter(Boolean).join(" · "))}">@${esc(l.username)}</a>`
         : `<span class="dash">—</span>`;
-      const action =
-        st.cls === "waiting" ? `<button class="btn ghost sm" type="button" data-send="${esc(inv.token)}">Send</button>`
-        : st.cls === "expired" ? `<button class="btn ghost sm" type="button" data-renew="${esc(inv.phone)}">New link</button>`
+      const btn =
+        p.status === "new" ? `<button class="btn sm" type="button" data-act="${p.phone}">Invite</button>`
+        : p.status === "ready" ? `<button class="btn sm" type="button" data-act="${p.phone}">Send</button>`
+        : p.status === "sent" ? `<button class="btn ghost sm" type="button" data-act="${p.phone}">Resend</button>`
+        : p.status === "expired" ? `<button class="btn ghost sm" type="button" data-act="${p.phone}">New link</button>`
         : "";
+      const rm = p.status === "new" && p.contact ? `<button class="link" type="button" data-rm="${p.phone}" title="Remove from the list">Remove</button>` : "";
       return `<tr class="${fresh ? "fresh" : ""}">
-        <td class="mono">${esc(fmtPhone(inv.phone))}</td>
+        <td class="mono">${esc(fmtPhone(p.phone))}</td>
+        <td class="who" title="${esc(p.name || "")}">${p.name ? esc(p.name) : `<span class="dash">—</span>`}</td>
         <td>${ig}</td>
-        <td><span class="st ${st.cls}" ${st.title ? `title="${esc(st.title)}"` : ""}>${st.text}</span>${st.left ? `<span class="left">${st.left}</span>` : ""}</td>
-        <td class="when" title="${esc(new Date(inv.createdAt).toLocaleString())}">${ago(inv.createdAt)}</td>
-        <td>${action}</td></tr>`;
-    }).join("");
-    if (!invites.length) $("rows").innerHTML = `<tr><td colspan="5" class="empty">No invites yet. Enter a number above to create the first one.</td></tr>`;
+        <td>${statusCell(p)}</td>
+        <td class="when" title="${esc(p.updatedAt ? new Date(p.updatedAt).toLocaleString() : "")}">${p.updatedAt ? updateText(p) : ""}</td>
+        <td><span class="rowact">${rm}${btn}</span></td></tr>`;
+    }).join("") || `<tr><td colspan="6" class="empty">${
+      people.length ? "Nobody matches this filter." : "Nobody here yet. Enter a number above, or import a CSV / Excel list."}</td></tr>`;
 
-    seen = new Set(invites.filter((i) => i.status === "linked").map((i) => i.token));
-    document.querySelectorAll("[data-send]").forEach((b) => (b.onclick = () => {
-      const inv = invitesCache.find((i) => i.token === b.dataset.send);
-      if (inv) showInvite(inv);
-    }));
-    document.querySelectorAll("[data-renew]").forEach((b) => (b.onclick = () => renew(b.dataset.renew)));
-    $("summary").innerHTML = `<b>${counts.connected}</b> connected · <b>${counts.waiting}</b> waiting` + (counts.expired ? ` · <b>${counts.expired}</b> expired` : "");
+    // Re-render only when something changed, so hovering and clicking aren't interrupted by polling.
+    if (html !== lastHtml) { $("rows").innerHTML = html; lastHtml = html; }
+    seen = new Set(people.filter((p) => p.status === "connected").map((p) => p.phone));
+
+    $("more").hidden = list.length <= limit;
+    $("moreBtn").textContent = `Show all ${list.length}`;
+    $("summary").innerHTML = `<b>${counts.connected}</b> connected · <b>${counts.sent}</b> waiting` + (counts.new ? ` · <b>${counts.new}</b> not invited` : "");
+  }
+
+  $("rows").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act],[data-rm]");
+    const p = b && people.find((x) => x.phone === (b.dataset.act || b.dataset.rm));
+    if (!p) return;
+    b.dataset.act ? act(p) : removeContact(p);
+  });
+  $("chips").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-filter]");
+    if (!b) return;
+    filter = b.dataset.filter; limit = PAGE;
+    renderPeople();
+  });
+  $("q").addEventListener("input", () => { query = $("q").value; limit = PAGE; renderPeople(); });
+  $("moreBtn").onclick = () => { limit = Infinity; renderPeople(); };
+
+  // ---- Export the rows shown as CSV ----
+  $("exportBtn").onclick = () => {
+    const cell = (v) => (/[",\n]/.test(v ?? "") ? `"${String(v).replace(/"/g, '""')}"` : v ?? "");
+    const lines = [["phone", "name", "status", "instagram", "instagram_id", "invited_at", "sent_at", "connected_at"]].concat(
+      visible().map((p) => ["+" + p.phone, p.name, STATUS[p.status].text, p.link ? "@" + p.link.username : "", p.link?.igsid,
+        p.invite?.createdAt, p.invite?.sentAt, p.link?.linkedAt])
+    );
+    const blob = new Blob(["﻿" + lines.map((r) => r.map(cell).join(",")).join("\r\n")], { type: "text/csv" });
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `instagram-handles-${new Date().toISOString().slice(0, 10)}.csv` });
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  // ---- Import a CSV / Excel list ----
+  const imp = { rows: [], source: "" };
+  const colName = (i) => (i < 26 ? String.fromCharCode(65 + i) : "A" + String.fromCharCode(65 + i - 26));
+  const looksLikePhone = (v) => !/[a-z]/i.test(v) && /^[\d\s()+\-.]+$/.test(v) && (v.replace(/\D/g, "").length >= 10 && v.replace(/\D/g, "").length <= 15);
+  const PHONE_TITLE = /phone|mobile|whats|cell|contact|number|^no\.?$|^tel/i;
+  const NAME_TITLE = /name/i;
+
+  function resetImport() {
+    imp.rows = [];
+    $("file").value = "";
+    $("drop").hidden = false;
+    $("mapping").hidden = true;
+    $("importErr").hidden = true;
+  }
+  $("importBtn").onclick = () => { resetImport(); $("cc").value = config.countryCode || "91"; $("importDlg").showModal(); };
+  $("otherFile").onclick = resetImport;
+  function importError(msg) { $("importErr").textContent = msg; $("importErr").hidden = !msg; }
+
+  async function readFile(f) {
+    importError("");
+    if (!f) return;
+    if (f.size > 3 * 1024 * 1024) return importError("This file is over 3 MB. Split it into smaller files.");
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    $("drop").querySelector("b").textContent = "Reading…";
+    try {
+      const d = await api("/api/contacts/parse", { filename: f.name, data: btoa(bin) });
+      if (d.error) return importError(d.error);
+      imp.rows = d.rows;
+      imp.source = f.name;
+      setupMapping();
+    } catch (err) { if (err.message !== "logged out") importError("Can't reach the server."); }
+    finally { $("drop").querySelector("b").textContent = "Choose a file"; }
+  }
+  $("file").onchange = () => readFile($("file").files[0]);
+  const drop = $("drop");
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); readFile(e.dataTransfer.files[0]); });
+
+  function setupMapping() {
+    const rows = imp.rows, width = Math.max(...rows.map((r) => r.length));
+    const first = rows[0];
+    const header = first.some((v) => PHONE_TITLE.test(v) || NAME_TITLE.test(v)) && !first.some(looksLikePhone);
+    $("hasHeader").checked = header;
+
+    // Phone column: a titled one, else the one with the most phone-like values.
+    const sample = rows.slice(header ? 1 : 0, 60);
+    const score = (i) => sample.filter((r) => looksLikePhone(r[i] || "")).length;
+    let phoneCol = header ? first.findIndex((v) => PHONE_TITLE.test(v) && !NAME_TITLE.test(v)) : -1;
+    if (phoneCol < 0 || !score(phoneCol)) phoneCol = [...Array(width).keys()].reduce((best, i) => (score(i) > score(best) ? i : best), 0);
+    let nameCol = header ? first.findIndex((v, i) => NAME_TITLE.test(v) && i !== phoneCol) : -1;
+
+    const label = (i) => `Column ${colName(i)}` + (header && first[i] ? ` · ${first[i]}` : ` · e.g. ${(rows[header ? 1 : 0] || [])[i] || "empty"}`);
+    $("phoneCol").innerHTML = [...Array(width).keys()].map((i) => `<option value="${i}">${esc(label(i))}</option>`).join("");
+    $("nameCol").innerHTML = `<option value="-1">No name column</option>` + [...Array(width).keys()].map((i) => `<option value="${i}">${esc(label(i))}</option>`).join("");
+    $("phoneCol").value = phoneCol;
+    $("nameCol").value = nameCol;
+    $("fileName").textContent = `${imp.source} · ${rows.length - (header ? 1 : 0)} rows`;
+    $("drop").hidden = true;
+    $("mapping").hidden = false;
+    checkImport();
+  }
+
+  function chosenRows() {
+    const pc = +$("phoneCol").value, nc = +$("nameCol").value, skip = $("hasHeader").checked ? 1 : 0;
+    return imp.rows.slice(skip).map((r, i) => ({ row: i + 1 + skip, phone: r[pc] || "", name: nc >= 0 ? r[nc] || "" : "" }));
+  }
+
+  let checkSeq = 0;
+  async function checkImport(final) {
+    const rows = chosenRows(), seq = ++checkSeq;
+    $("fileName").textContent = `${imp.source} · ${rows.length} rows`;
+    $("prevRows").innerHTML = rows.slice(0, 6).map((r) => `<tr><td class="when">${r.row}</td><td class="mono">${esc(r.phone) || '<span class="dash">—</span>'}</td><td>${esc(r.name) || '<span class="dash">—</span>'}</td></tr>`).join("");
+    $("doImport").disabled = true;
+    importError("");
+    try {
+      const d = await api("/api/contacts/import", { rows, source: imp.source, countryCode: $("cc").value, dryRun: !final });
+      if (seq !== checkSeq) return;
+      if (d.error) return importError(d.error);
+      if (final) return imported(d);
+      const parts = [`<b>${d.new}</b> new number${d.new === 1 ? "" : "s"}`];
+      if (d.existing) parts.push(`<b>${d.existing}</b> already in your list`);
+      if (d.connected) parts.push(`<b>${d.connected}</b> already connected`);
+      if (d.duplicates) parts.push(`<b>${d.duplicates}</b> repeated in the file`);
+      const bad = d.invalidCount
+        ? `<span class="bad">${d.invalidCount} row${d.invalidCount === 1 ? "" : "s"} can't be read and will be skipped: ` +
+          d.invalid.slice(0, 5).map((x) => `row ${x.row} (${esc(x.value) || "empty"}: ${esc(x.reason)})`).join(", ") + (d.invalidCount > 5 ? ", …" : "") + "</span>"
+        : "";
+      $("stats").innerHTML = parts.join(" · ") + bad;
+      $("doImport").textContent = d.new ? `Import ${d.new} number${d.new === 1 ? "" : "s"}` : d.valid ? "Update names" : "Import";
+      $("doImport").disabled = !d.valid;
+    } catch (err) { if (err.message !== "logged out" && seq === checkSeq) importError("Can't reach the server."); }
+  }
+  ["phoneCol", "nameCol", "hasHeader"].forEach((id) => ($(id).onchange = () => checkImport()));
+  let ccTimer;
+  $("cc").oninput = () => { clearTimeout(ccTimer); ccTimer = setTimeout(() => checkImport(), 300); };
+  $("doImport").onclick = () => checkImport(true);
+
+  function imported(d) {
+    $("importDlg").close();
+    filter = d.added ? "new" : "all"; limit = PAGE; query = ""; $("q").value = "";
+    showError("");
+    showNote(`Imported ${d.added} new number${d.added === 1 ? "" : "s"}` + (d.updated ? `, ${d.updated} already listed` : "") +
+      (d.invalidCount ? `, ${d.invalidCount} skipped` : "") + ". Press Invite on a row to send the first message.");
+    refresh();
   }
 
   // ---- Activity: webhook events as plain sentences ----
@@ -384,9 +714,10 @@
   let timer = null;
   async function refresh() {
     try {
-      const [invites, links, events] = await Promise.all(["/api/invites", "/api/links", "/api/events"].map((u) => api(u)));
-      invitesCache = invites;
-      renderPeople(invites, links);
+      const [invites, links, events, contacts] = await Promise.all(["/api/invites", "/api/links", "/api/events", "/api/contacts"].map((u) => api(u)));
+      people = buildPeople(contacts, invites, links);
+      renderPeople();
+      if ($("sendDlg").open) updateNext();
       renderFeed(events, invites, links);
       $("foot").textContent = "Updated " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     } catch (err) {
@@ -402,9 +733,10 @@
     $("pw").focus();
   }
 
+  let config = {};
   async function start() {
     try {
-      const c = await api("/api/config");
+      const c = (config = await api("/api/config"));
       document.querySelectorAll(".igName").forEach((el) => (el.textContent = "@" + c.igUsername));
       $("ttlText").textContent = c.ttlText;
     } catch (err) {

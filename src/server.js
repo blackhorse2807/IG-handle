@@ -6,13 +6,17 @@ const jwt = require("jsonwebtoken");
 
 const store = require("./store");
 const ig = require("./instagram");
+const importer = require("./importer");
 
 const env = process.env;
 const app = express();
 app.set("trust proxy", 1); // behind Vercel: lets req.secure see the original https
 
 // Keep the raw body so we can verify Meta's webhook signature.
-app.use(express.json({ limit: "1mb", verify: (req, _res, buf) => (req.rawBody = buf) }));
+// File uploads get a bigger limit, parsed only after the login check (see /api/contacts/parse).
+const UPLOAD_PATH = "/api/contacts/parse";
+const smallJson = express.json({ limit: "1mb", verify: (req, _res, buf) => (req.rawBody = buf) });
+app.use((req, res, next) => (req.path === UPLOAD_PATH ? next() : smallJson(req, res, next)));
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 // ---------------------------------------------------------------------------
@@ -67,9 +71,8 @@ app.use("/api", (req, res, next) => {
 // ---------------------------------------------------------------------------
 // 1) Create invites. The admin shares the message on WhatsApp by hand.
 // ---------------------------------------------------------------------------
-function digitsOnly(phone) {
-  return String(phone).replace(/\D/g, "");
-}
+// Numbers typed or imported without a country code get this one (DEFAULT_COUNTRY_CODE, default 91).
+const COUNTRY_CODE = String(env.DEFAULT_COUNTRY_CODE || "91").replace(/\D/g, "") || "91";
 
 function newToken() {
   // ig.me ref allows only [A-Za-z0-9_-=]; hex is safe and unguessable (48 bits)
@@ -99,9 +102,10 @@ const ttlText = () =>
 const expiresAt = (invite) => invite.expiresAt || new Date(Date.parse(invite.createdAt) + TTL_MS).toISOString();
 const isExpired = (invite) => Date.now() > Date.parse(expiresAt(invite));
 
-function inviteMessage(token) {
+function inviteMessage(token, name) {
+  const first = String(name || "").trim().split(/[\s,;/]+/)[0];
   return (
-    `Hi! Let's connect your Instagram account. It takes a few taps, no typing.\n` +
+    `Hi${first ? " " + first : ""}! Let's connect your Instagram account. It takes a few taps, no typing.\n` +
     `Please open these links on your phone; they don't work on a computer.\n\n` +
     `*Step 1:* Open our Instagram chat and tap "Start chat":\n${startLink()}\n\n` +
     `*Step 2:* Come back here and tap this link to finish:\n${inviteLink(token)}\n\n` +
@@ -117,7 +121,7 @@ function withLinks(invite) {
     expiresAt: expiresAt(invite),
     startLink: startLink(),
     link: inviteLink(invite.token),
-    message: inviteMessage(invite.token),
+    message: inviteMessage(invite.token, invite.name),
   };
 }
 
@@ -125,15 +129,17 @@ function withLinks(invite) {
 const route = (fn) => (req, res, next) => fn(req, res).catch(next);
 
 app.post("/api/invites", route(async (req, res) => {
-  const phone = digitsOnly(req.body.phone || "");
-  if (phone.length < 10 || phone.length > 15) {
-    return res.status(400).json({ error: "Enter the number with country code, e.g. +91 98765 43210" });
+  const { phone } = importer.normalizePhone(req.body.phone, COUNTRY_CODE);
+  if (!phone) {
+    return res.status(400).json({ error: "That doesn't look like a phone number. Example: +91 98765 43210" });
   }
 
+  const contact = await store.getContact(phone);
   const now = Date.now();
   const invite = {
     token: newToken(),
     phone,
+    name: contact?.name || null,
     createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + TTL_MS).toISOString(),
     status: "pending",
@@ -143,9 +149,75 @@ app.post("/api/invites", route(async (req, res) => {
   res.json(withLinks(invite));
 }));
 
+// The admin opened the message in WhatsApp or copied it: the invite counts as sent.
+app.post("/api/invites/:token/sent", route(async (req, res) => {
+  const ok = await store.markSent(req.params.token, new Date().toISOString());
+  res.status(ok ? 200 : 404).json(ok ? { ok: true } : { error: "No such invite." });
+}));
+
+// ---------------------------------------------------------------------------
+// 1b) Contacts imported from a CSV / Excel file, to invite one by one from the list
+// ---------------------------------------------------------------------------
+// Step 1: the browser sends the file (base64); we return its rows so the admin can pick the columns.
+app.post(UPLOAD_PATH, express.json({ limit: "6mb" }), route(async (req, res) => {
+  const { filename, data } = req.body || {};
+  if (!data) return res.status(400).json({ error: "No file received." });
+  try {
+    res.json(await importer.parseUpload(filename, Buffer.from(String(data), "base64")));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}));
+
+// Step 2: the chosen columns as [{ phone, name, row }]. With dryRun it only reports what would happen.
+app.post("/api/contacts/import", route(async (req, res) => {
+  const { rows, source, countryCode, dryRun } = req.body || {};
+  if (!Array.isArray(rows) || !rows.length) return res.status(400).json({ error: "Nothing to import." });
+  if (rows.length > importer.MAX_ROWS) return res.status(400).json({ error: `Import at most ${importer.MAX_ROWS} rows at a time.` });
+
+  const cc = String(countryCode ?? COUNTRY_CODE).replace(/\D/g, "");
+  const seen = new Set(), valid = [], invalid = [];
+  let duplicates = 0;
+  rows.forEach((r, i) => {
+    const n = importer.normalizePhone(r?.phone, cc);
+    if (!n.phone) return invalid.push({ row: r?.row ?? i + 1, value: String(r?.phone ?? "").slice(0, 40), reason: n.error });
+    if (seen.has(n.phone)) return duplicates++;
+    seen.add(n.phone);
+    valid.push({ phone: n.phone, name: String(r?.name ?? "").trim().slice(0, 80) || null, seq: valid.length });
+  });
+
+  const [contacts, links] = await Promise.all([store.listContacts(), store.listLinks()]);
+  const known = new Set(contacts.map((c) => c.phone));
+  const connected = new Set(links.map((l) => l.phone));
+  const summary = {
+    valid: valid.length,
+    new: valid.filter((c) => !known.has(c.phone)).length,
+    existing: valid.filter((c) => known.has(c.phone)).length,
+    connected: valid.filter((c) => connected.has(c.phone)).length,
+    duplicates,
+    invalid: invalid.slice(0, 50),
+    invalidCount: invalid.length,
+  };
+  if (dryRun) return res.json(summary);
+
+  const result = await store.upsertContacts(valid, {
+    source: String(source || "import").slice(0, 120),
+    importedAt: new Date().toISOString(),
+  });
+  console.log(`IMPORT  ${result.added} added, ${result.updated} already listed, ${invalid.length} unreadable  (${source})`);
+  res.json({ ...summary, ...result });
+}));
+
+app.get("/api/contacts", route(async (_req, res) => res.json(await store.listContacts())));
+app.delete("/api/contacts/:phone", route(async (req, res) => {
+  const ok = await store.deleteContact(String(req.params.phone).replace(/\D/g, ""));
+  res.status(ok ? 200 : 404).json(ok ? { ok: true } : { error: "Not in the list." });
+}));
+
 app.get("/api/config", (_req, res) =>
   res.json({
     igUsername: env.IG_USERNAME,
+    countryCode: COUNTRY_CODE,
     webhookUrl: `${env.PUBLIC_URL || ""}/webhook`,
     ttlText: ttlText(),
     mock: env.MOCK_MODE === "1",

@@ -19,7 +19,7 @@ Proof of number ownership: only the phone's owner receives the WhatsApp message 
 | Tested and rejected workarounds | Second button inside the chat ("Continue"): button taps never carry the ref. "Tap the link again" auto-reply: works, but the user only learns after getting stuck. Typing "hi": never tested. |
 | Server reply on Step 1 | Any `START_CHAT` postback or first message without a ref, from someone not yet linked, gets: "Thanks for starting the chat! 👋 To finish, go back to WhatsApp on your phone and tap the Step 2 link." So any tap order recovers. |
 | WhatsApp sent manually | Twilio sandbox and Meta WhatsApp Cloud API were removed. Cloud API was blocked (business account locked, error 131031). The dashboard gives "Open in WhatsApp" (wa.me prefilled) and "Copy message". |
-| CSV import | Built, then removed on request. Single invites only. |
+| CSV / Excel import | Re-added 7 Nov 2026 as a contact list, not bulk sending. Import (`.csv`/`.xlsx`, parsed on the server with `read-excel-file`) only saves numbers + names in `contacts`; a link is created when the admin presses **Invite** on a row (links expire, so they aren't made in advance). The admin sends by hand, then **Next →** moves to the next person. Opening WhatsApp or copying the message sets the invite's `sentAt`. Statuses: Not invited → Link ready → Sent → Connected / Expired. Export downloads the filtered rows as CSV. |
 | Links expire | `INVITE_TTL_HOURS` (default 24). Each invite stores its own `expiresAt`. Expired Step 2 → DM "This link has expired. Please ask for a new one." Dashboard shows "New link". |
 | Single-use links | A link already claimed by another IGSID is rejected (forwarded-link protection). Claiming is atomic (MongoDB conditional update). |
 | Message requests | No need to accept new chats in the business inbox; webhooks and replies work either way. Don't block/delete before Step 2. |
@@ -28,10 +28,11 @@ Proof of number ownership: only the phone's owner receives the WhatsApp message 
 
 - `src/server.js`: Express app. Admin login (password → JWT in httpOnly cookie, 7 days), `/api/invites`, `/api/links`, `/api/events`, `/api/config`, `GET /webhook` (verify handshake), `POST /webhook` (signature check → process events **before** replying, because Vercel freezes functions after the response).
 - `src/instagram.js`: Graph API calls (`getProfile`, `sendDM`), `X-Hub-Signature-256` check with `IG_APP_SECRET`, `extractReferral` (handles `referral.ref`, `postback.referral.ref`, `message.referral.ref`, echoes ignored), `ICEBREAKER = { question: "Start chat", payload: "START_CHAT" }`.
-- `src/store.js`: MongoDB when `MONGODB_URI` is set (collections `invites` keyed by token, `links` keyed by phone, `events`), else JSON file `data/db.json` (or `DB_FILE`).
-- `public/index.html`: dashboard (login, create link, People / Activity tabs, invite dialog, How it works dialog).
+- `src/importer.js`: phone number normalisation (`DEFAULT_COUNTRY_CODE`, default 91) and CSV / `.xlsx` parsing for the import. Endpoints: `POST /api/contacts/parse` (file as base64 → rows), `POST /api/contacts/import` (`dryRun` for the preview), `GET /api/contacts`, `DELETE /api/contacts/:phone`, `POST /api/invites/:token/sent`.
+- `src/store.js`: MongoDB when `MONGODB_URI` is set (collections `invites` keyed by token, `links` keyed by phone, `contacts` keyed by phone, `events`), else JSON file `data/db.json` (or `DB_FILE`).
+- `public/index.html`: dashboard (login, create link, import list, People list with status filters / search / export, Activity tab, invite dialog with Next, How it works dialog).
 - `api/index.js` + `vercel.json`: Vercel entry; rewrites `/api/*` and `/webhook` to the function, `public/` served static.
-- `scripts/setup-instagram.js`: one-time token check, webhook field subscription, ice breaker. `scripts/simulate-webhooks.js`: offline test suite (21 checks).
+- `scripts/setup-instagram.js`: one-time token check, webhook field subscription, ice breaker. `scripts/simulate-webhooks.js`: offline test suite (29 checks).
 
 ## 4. Where things live
 
